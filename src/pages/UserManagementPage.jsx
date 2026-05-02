@@ -1,65 +1,82 @@
 /**
  * UserManagementPage.jsx — Manajemen akun user (Admin only).
- *
- * - GET    /api/users           : daftar semua user
- * - POST   /api/users           : buat user baru
- * - DELETE /api/users/<id>      : hapus user
- * - PUT    /api/users/<id>/role : ubah role user
+ * Tabel bersih tanpa garis vertikal, Inline Style bypass Tailwind caching.
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import {
-  Users, Plus, Trash2, RefreshCw, Shield, Eye, AlertCircle, X, CheckCircle, ChevronDown
-} from 'lucide-react';
+import { Plus, MoreVertical, AlertCircle, X, CheckCircle, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import Header from '../components/Header';
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// ── Sub-components ─────────────────────────────────────────────────────────────
 
 function RoleBadge({ role }) {
+  const isAdmin = role === 'admin';
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold
-      ${role === 'admin'
-        ? 'bg-primary-100 text-primary-700'
-        : 'bg-surface-secondary text-text-secondary border border-border'}`
-    }>
-      {role === 'admin' ? <Shield className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-      {role === 'admin' ? 'Admin' : 'Viewer'}
+    <span
+      style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        padding: '4px 12px', borderRadius: '9999px', fontSize: '12px', fontWeight: '600',
+        backgroundColor: isAdmin ? '#eef2ff' : '#f8fafc',
+        color: isAdmin ? '#4f46e5' : '#475569',
+        border: `1px solid ${isAdmin ? '#c7d2fe' : '#e2e8f0'}`,
+        letterSpacing: '0.025em'
+      }}
+    >
+      {isAdmin ? 'Admin' : 'Viewer'}
     </span>
   );
 }
 
-function Alert({ type, message, onClose }) {
-  if (!message) return null;
-  const styles = {
-    success: 'bg-success-light border-success/20 text-success',
-    error:   'bg-danger-light border-danger/20 text-danger',
-  };
-  const Icon = type === 'success' ? CheckCircle : AlertCircle;
+function StatusBadge({ isActive }) {
   return (
-    <div className={`flex items-center gap-2 px-4 py-3 rounded-xl border text-sm mb-4 ${styles[type]}`}>
-      <Icon className="w-4 h-4 flex-shrink-0" />
-      <span className="flex-1">{message}</span>
-      <button onClick={onClose}><X className="w-4 h-4 opacity-60 hover:opacity-100" /></button>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: '500', color: '#475569' }}>
+      <span
+        style={{
+          width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
+          backgroundColor: isActive ? '#22c55e' : '#cbd5e1'
+        }}
+      />
+      {isActive ? 'Active' : 'Inactive'}
+    </span>
+  );
+}
+
+function AlertBanner({ type, message, onClose }) {
+  if (!message) return null;
+  const isSuccess = type === 'success';
+  const Icon = isSuccess ? CheckCircle : AlertCircle;
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px',
+      borderRadius: '12px', fontSize: '14px', marginBottom: '24px',
+      backgroundColor: isSuccess ? '#f0fdf4' : '#fef2f2',
+      border: `1px solid ${isSuccess ? '#bbf7d0' : '#fecaca'}`,
+      color: isSuccess ? '#15803d' : '#b91c1c'
+    }}>
+      <Icon style={{ width: '20px', height: '20px', flexShrink: 0 }} />
+      <span style={{ flex: 1, fontWeight: '500' }}>{message}</span>
+      <button onClick={onClose} style={{ border: 'none', background: 'transparent', cursor: 'pointer', opacity: 0.6 }}>
+        <X style={{ width: '20px', height: '20px', color: 'inherit' }} />
+      </button>
     </div>
   );
 }
 
-// ── Modal Tambah User ─────────────────────────────────────────────────────────
+// ── Add User Modal ─────────────────────────────────────────────────────────────
 
 function AddUserModal({ onClose, onSuccess }) {
-  const [form, setForm]     = useState({ username: '', password: '', role: 'viewer' });
-  const [error, setError]   = useState('');
+  const [form, setForm] = useState({ username: '', password: '', role: 'viewer' });
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const inputClass = `w-full px-4 py-2.5 rounded-xl border border-border bg-surface text-sm text-text-primary
-                      placeholder-text-muted outline-none transition-all
-                      focus:border-primary-400 focus:ring-2 focus:ring-primary-100`;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.username.trim() || !form.password) { setError('Username dan password wajib diisi.'); return; }
-    if (form.password.length < 6) { setError('Password minimal 6 karakter.'); return; }
+    if (!form.username.trim() || !form.password) {
+      setError('Username dan password wajib diisi.');
+      return;
+    }
     setLoading(true);
     try {
       const res = await api.post('/api/users', form);
@@ -71,57 +88,61 @@ function AddUserModal({ onClose, onSuccess }) {
     }
   };
 
+  const inputStyle = {
+    width: '100%', boxSizing: 'border-box', padding: '10px 16px', borderRadius: '8px',
+    border: '1px solid #cbd5e1', backgroundColor: '#fff', fontSize: '14px', color: '#1e293b', outline: 'none'
+  };
+
   return (
-    // Overlay
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-         style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}
-         onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md p-6 animate-fade-in-up"
-           style={{ border: '1px solid rgba(0,0,0,0.08)' }}>
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-text-primary">Tambah User Baru</h2>
-          <button onClick={onClose} className="text-text-muted hover:text-text-primary transition-colors">
-            <X className="w-5 h-5" />
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center',
+        justifyContent: 'center', padding: '16px', backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)'
+      }}
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <div style={{ backgroundColor: '#fff', borderRadius: '16px', width: '100%', maxWidth: '448px', padding: '24px', boxShadow: '0 20px 48px rgba(0,0,0,0.15)', border: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Users style={{ width: '20px', height: '20px', color: '#4f46e5' }} />
+            </div>
+            <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1e293b', margin: 0 }}>Tambah User Baru</h2>
+          </div>
+          <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+            <X style={{ width: '20px', height: '20px' }} />
           </button>
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-danger-light border border-danger/20 text-danger text-sm mb-4">
-            <AlertCircle className="w-4 h-4" /> {error}
+          <div style={{ color: '#b91c1c', fontSize: '14px', marginBottom: '20px', backgroundColor: '#fef2f2', padding: '12px', borderRadius: '8px', border: '1px solid #fecaca', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <AlertCircle style={{ width: '16px', height: '16px' }} />
+            {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
           <div>
-            <label className="text-sm font-semibold text-text-primary mb-1.5 block">Username</label>
-            <input type="text" placeholder="Nama pengguna" className={inputClass}
-              value={form.username} onChange={e => { setForm({...form, username: e.target.value}); setError(''); }} required />
+            <label style={{ fontSize: '13px', fontWeight: '600', color: '#475569', marginBottom: '6px', display: 'block' }}>Username</label>
+            <input type="text" style={inputStyle} value={form.username} onChange={e => { setForm({ ...form, username: e.target.value }); setError(''); }} placeholder="Masukkan username" required />
           </div>
           <div>
-            <label className="text-sm font-semibold text-text-primary mb-1.5 block">Password</label>
-            <input type="password" placeholder="Min. 6 karakter" className={inputClass}
-              value={form.password} onChange={e => { setForm({...form, password: e.target.value}); setError(''); }} required />
+            <label style={{ fontSize: '13px', fontWeight: '600', color: '#475569', marginBottom: '6px', display: 'block' }}>Password</label>
+            <input type="password" style={inputStyle} value={form.password} onChange={e => { setForm({ ...form, password: e.target.value }); setError(''); }} placeholder="Masukkan password" required />
           </div>
           <div>
-            <label className="text-sm font-semibold text-text-primary mb-1.5 block">Role</label>
-            <div className="relative">
-              <select className={`${inputClass} appearance-none pr-10 cursor-pointer`}
-                value={form.role} onChange={e => setForm({...form, role: e.target.value})}>
-                <option value="viewer">Viewer — Hanya Dashboard</option>
-                <option value="admin">Admin — Akses Penuh</option>
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
-            </div>
+            <label style={{ fontSize: '13px', fontWeight: '600', color: '#475569', marginBottom: '6px', display: 'block' }}>Role</label>
+            <select style={inputStyle} value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
+              <option value="viewer">Viewer</option>
+              <option value="admin">Admin</option>
+            </select>
           </div>
-          <div className="flex gap-3 mt-2">
-            <button type="button" onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors">
+          <div style={{ display: 'flex', gap: '12px', marginTop: '8px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
+            <button type="button" onClick={onClose} style={{ flex: 1, padding: '10px 0', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: '600', color: '#475569', backgroundColor: '#fff', cursor: 'pointer' }}>
               Batal
             </button>
-            <button type="submit" disabled={loading}
-              className="flex-1 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold
-                         transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
-              {loading ? <><RefreshCw className="w-4 h-4 animate-spin" /> Membuat...</> : 'Buat User'}
+            <button type="submit" disabled={loading} style={{ flex: 1, padding: '10px 0', borderRadius: '8px', border: 'none', fontSize: '14px', fontWeight: '700', color: '#fff', backgroundColor: '#4f46e5', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}>
+              {loading ? 'Membuat...' : 'Buat User'}
             </button>
           </div>
         </form>
@@ -130,54 +151,14 @@ function AddUserModal({ onClose, onSuccess }) {
   );
 }
 
-// ── Konfirmasi Hapus ──────────────────────────────────────────────────────────
-
-function DeleteConfirmModal({ user: targetUser, onClose, onConfirm, loading }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-         style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}
-         onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-sm p-6 animate-fade-in-up"
-           style={{ border: '1px solid rgba(0,0,0,0.08)' }}>
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-danger-light flex items-center justify-center">
-            <Trash2 className="w-5 h-5 text-danger" />
-          </div>
-          <div>
-            <h2 className="text-base font-bold text-text-primary">Hapus User</h2>
-            <p className="text-sm text-text-muted">Tindakan ini tidak bisa dibatalkan</p>
-          </div>
-        </div>
-        <p className="text-sm text-text-secondary mb-5">
-          Yakin ingin menghapus akun <span className="font-semibold text-text-primary">"{targetUser?.username}"</span>?
-          User ini tidak akan bisa login lagi.
-        </p>
-        <div className="flex gap-3">
-          <button onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors">
-            Batal
-          </button>
-          <button onClick={onConfirm} disabled={loading}
-            className="flex-1 py-2.5 rounded-xl bg-danger hover:bg-red-700 text-white text-sm font-semibold
-                       transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
-            {loading ? <><RefreshCw className="w-4 h-4 animate-spin" /> Menghapus...</> : 'Ya, Hapus'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Main Page ─────────────────────────────────────────────────────────────────
+// ── Main Page ──────────────────────────────────────────────────────────────────
 
 export default function UserManagementPage() {
   const { user: currentUser } = useAuth();
-  const [users, setUsers]       = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [showAdd, setShowAdd]   = useState(false);
-  const [toDelete, setToDelete] = useState(null);
-  const [deleting, setDeleting] = useState(false);
-  const [alert, setAlert]       = useState({ type: '', message: '' });
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [alert, setAlert] = useState({ type: '', message: '' });
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
@@ -199,172 +180,120 @@ export default function UserManagementPage() {
     setAlert({ type: 'success', message: `User "${newUser.username}" berhasil dibuat.` });
   };
 
-  const handleDelete = async () => {
-    if (!toDelete) return;
-    setDeleting(true);
-    try {
-      await api.delete(`/api/users/${toDelete.id}`);
-      setUsers(prev => prev.filter(u => u.id !== toDelete.id));
-      setAlert({ type: 'success', message: `User "${toDelete.username}" berhasil dihapus.` });
-    } catch (err) {
-      setAlert({ type: 'error', message: err.response?.data?.error || 'Gagal menghapus user.' });
-    } finally {
-      setDeleting(false);
-      setToDelete(null);
-    }
-  };
-
-  const handleRoleChange = async (userId, newRole) => {
-    try {
-      const res = await api.put(`/api/users/${userId}/role`, { role: newRole });
-      setUsers(prev => prev.map(u => u.id === userId ? res.data : u));
-      setAlert({ type: 'success', message: `Role berhasil diubah ke "${newRole}".` });
-    } catch (err) {
-      setAlert({ type: 'error', message: err.response?.data?.error || 'Gagal mengubah role.' });
-    }
-  };
-
   const formatDate = (iso) => {
-    if (!iso) return '-';
-    return new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+    if (!iso) return '—';
+    return new Date(iso).toLocaleDateString('en-GB', {
+      day: '2-digit', month: 'short', year: 'numeric'
+    });
   };
 
   return (
-    <div className="p-4 md:p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-emerald-50">
-            <Users className="w-6 h-6 text-emerald-600" strokeWidth={2} />
-          </div>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: '#f8fafc' }}>
+      <Header connectionStatus="mock" />
+
+      <div style={{ padding: '32px', width: '100%', maxWidth: '1200px', margin: '0 auto', flex: 1, boxSizing: 'border-box' }}>
+
+        {/* Page Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
           <div>
-            <h1 className="text-xl font-bold text-text-primary">User Management</h1>
-            <p className="text-sm text-text-muted">{users.length} akun terdaftar</p>
+            <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 4px 0', letterSpacing: '-0.025em' }}>
+              User Management
+            </h1>
+            <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>
+              Manage system access and roles
+            </p>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={loadUsers} disabled={loading}
-            className="p-2.5 rounded-xl border border-border hover:bg-surface-secondary text-text-muted transition-colors"
-            title="Refresh">
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-          <button onClick={() => setShowAdd(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700
-                       text-white text-sm font-semibold transition-colors shadow-md shadow-primary-200">
-            <Plus className="w-4 h-4" />
+          <button
+            onClick={() => setShowAdd(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '8px', color: '#fff', backgroundColor: '#4f46e5', fontSize: '14px', fontWeight: '600', border: 'none', cursor: 'pointer', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}
+          >
+            <Plus style={{ width: '20px', height: '20px' }} />
             <span>Tambah User</span>
           </button>
         </div>
-      </div>
 
-      <Alert {...alert} onClose={() => setAlert({ type: '', message: '' })} />
+        <AlertBanner {...alert} onClose={() => setAlert({ type: '', message: '' })} />
 
-      {/* Table */}
-      <div className="glass-card rounded-2xl overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center h-48">
-            <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
-          </div>
-        ) : users.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-text-muted gap-2">
-            <Users className="w-10 h-10 opacity-30" />
-            <p className="text-sm">Belum ada user.</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+        {/* Table Card - 100% Inline Style */}
+        <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)' }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
-                <tr className="bg-surface-secondary border-b border-border">
-                  <th className="text-left px-5 py-3 font-semibold text-text-secondary text-xs uppercase tracking-wider">Username</th>
-                  <th className="text-left px-5 py-3 font-semibold text-text-secondary text-xs uppercase tracking-wider">Role</th>
-                  <th className="text-left px-5 py-3 font-semibold text-text-secondary text-xs uppercase tracking-wider hidden sm:table-cell">Dibuat</th>
-                  <th className="text-left px-5 py-3 font-semibold text-text-secondary text-xs uppercase tracking-wider">Status</th>
-                  <th className="text-right px-5 py-3 font-semibold text-text-secondary text-xs uppercase tracking-wider">Aksi</th>
+                <tr>
+                  <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', width: '35%' }}>Username</th>
+                  <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', width: '18%' }}>Role</th>
+                  <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', width: '22%' }}>Dibuat</th>
+                  <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', width: '18%' }}>Status</th>
+                  <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', width: '7%', textAlign: 'right' }}>Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
-                {users.map(u => (
-                  <tr key={u.id} className="hover:bg-surface-secondary/50 transition-colors">
-                    {/* Username */}
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
-                          <span className="text-xs font-bold text-primary-700 uppercase">
-                            {u.username[0]}
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={5} style={{ padding: '32px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>Memuat data...</td></tr>
+                ) : users.length === 0 ? (
+                  <tr><td colSpan={5} style={{ padding: '64px 24px', textAlign: 'center', color: '#64748b', fontSize: '14px' }}>Belum ada user terdaftar.</td></tr>
+                ) : (
+                  users.map(u => (
+                    <tr key={u.id}>
+                      <td style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                          <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e2e8f0', flexShrink: 0 }}>
+                            <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569', textTransform: 'uppercase' }}>
+                              {u.username[0]}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: '14px', fontWeight: '500', color: '#1e293b' }}>
+                            {u.username}
                           </span>
                         </div>
-                        <span className="font-medium text-text-primary">
-                          {u.username}
-                          {u.id === currentUser?.id && (
-                            <span className="ml-2 text-[10px] font-semibold text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-md">Anda</span>
-                          )}
-                        </span>
-                      </div>
-                    </td>
-                    {/* Role (editable) */}
-                    <td className="px-5 py-4">
-                      {u.id === currentUser?.id ? (
+                      </td>
+                      <td style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9' }}>
                         <RoleBadge role={u.role} />
-                      ) : (
-                        <div className="relative inline-block">
-                          <select
-                            value={u.role}
-                            onChange={e => handleRoleChange(u.id, e.target.value)}
-                            className="text-xs font-semibold pl-2 pr-6 py-1 rounded-full cursor-pointer outline-none
-                                       appearance-none border border-transparent hover:border-border transition-colors
-                                       bg-transparent"
-                            style={{ color: u.role === 'admin' ? '#2563eb' : '#475569' }}
-                          >
-                            <option value="viewer">Viewer</option>
-                            <option value="admin">Admin</option>
-                          </select>
-                          <ChevronDown className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-3 text-text-muted pointer-events-none" />
-                        </div>
-                      )}
-                    </td>
-                    {/* Created */}
-                    <td className="px-5 py-4 text-text-muted hidden sm:table-cell">
-                      {formatDate(u.created_at)}
-                    </td>
-                    {/* Status */}
-                    <td className="px-5 py-4">
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
-                        ${u.is_active ? 'bg-success-light text-success' : 'bg-surface-tertiary text-text-muted'}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${u.is_active ? 'bg-success' : 'bg-text-muted'}`} />
-                        {u.is_active ? 'Aktif' : 'Nonaktif'}
-                      </span>
-                    </td>
-                    {/* Actions */}
-                    <td className="px-5 py-4 text-right">
-                      {u.id !== currentUser?.id ? (
-                        <button
-                          onClick={() => setToDelete(u)}
-                          className="p-2 rounded-lg text-text-muted hover:text-danger hover:bg-danger-light transition-colors"
-                          title="Hapus user"
-                        >
-                          <Trash2 className="w-4 h-4" />
+                      </td>
+                      <td style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9' }}>
+                        <span style={{ fontSize: '14px', color: '#64748b' }}>
+                          {formatDate(u.created_at)}
+                        </span>
+                      </td>
+                      <td style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9' }}>
+                        <StatusBadge isActive={u.is_active} />
+                      </td>
+                      <td style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9', textAlign: 'right' }}>
+                        <button style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '8px', color: '#94a3b8' }}>
+                          <MoreVertical style={{ width: '20px', height: '20px' }} />
                         </button>
-                      ) : (
-                        <span className="text-xs text-text-muted px-2">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
-        )}
+
+          {/* Pagination Footer - Strict Inline */}
+          {!loading && users.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', backgroundColor: '#ffffff', borderTop: '1px solid #e2e8f0' }}>
+              <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
+                Showing 1 to {users.length} of {users.length} users
+              </p>
+              <div style={{ display: 'inline-flex', borderRadius: '8px', border: '1px solid #cbd5e1', overflow: 'hidden' }}>
+                <button style={{ padding: '8px 14px', fontSize: '13px', fontWeight: '500', color: '#94a3b8', backgroundColor: '#ffffff', border: 'none', borderRight: '1px solid #cbd5e1', cursor: 'not-allowed' }} disabled>
+                  Prev
+                </button>
+                <button style={{ padding: '8px 16px', fontSize: '13px', fontWeight: '600', color: '#ffffff', backgroundColor: '#4f46e5', border: 'none' }}>
+                  1
+                </button>
+                <button style={{ padding: '8px 14px', fontSize: '13px', fontWeight: '500', color: '#475569', backgroundColor: '#ffffff', border: 'none', borderLeft: '1px solid #cbd5e1', cursor: 'pointer' }}>
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Modals */}
-      {showAdd && <AddUserModal onClose={() => setShowAdd(false)} onSuccess={handleAddSuccess} />}
-      {toDelete && (
-        <DeleteConfirmModal
-          user={toDelete}
-          onClose={() => setToDelete(null)}
-          onConfirm={handleDelete}
-          loading={deleting}
-        />
+      {showAdd && (
+        <AddUserModal onClose={() => setShowAdd(false)} onSuccess={handleAddSuccess} />
       )}
     </div>
   );

@@ -1,64 +1,68 @@
 /**
  * MqttSettingsPage.jsx — Halaman konfigurasi MQTT Broker (Admin only).
- *
- * - GET /api/settings/mqtt  : muat konfigurasi saat ini
- * - PUT /api/settings/mqtt  : simpan perubahan
+ * 100% Inline Style bypass Tailwind caching, presisi sesuai referensi.
  */
 
 import { useState, useEffect } from 'react';
-import { Wifi, Save, RefreshCw, CheckCircle, AlertCircle, Eye, EyeOff, Info } from 'lucide-react';
+import { Save, RefreshCw, CheckCircle, AlertCircle, Eye, EyeOff, Info } from 'lucide-react';
 import api from '../services/api';
+import Header from '../components/Header';
 
-function PageHeader({ title, subtitle, icon: Icon, iconColor, iconBg }) {
-  return (
-    <div className="flex items-center gap-4 mb-6">
-      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${iconBg}`}>
-        <Icon className={`w-6 h-6 ${iconColor}`} strokeWidth={2} />
-      </div>
-      <div>
-        <h1 className="text-xl font-bold text-text-primary">{title}</h1>
-        <p className="text-sm text-text-muted">{subtitle}</p>
-      </div>
-    </div>
-  );
-}
+const inputStyle = {
+  width: '100%',
+  boxSizing: 'border-box',
+  padding: '10px 16px',
+  borderRadius: '8px',
+  border: '1px solid #cbd5e1',
+  backgroundColor: '#fff',
+  fontSize: '14px',
+  color: '#1e293b',
+  outline: 'none',
+  transition: 'border-color 0.2s'
+};
 
-function Alert({ type, message }) {
+function AlertBanner({ type, message }) {
   if (!message) return null;
-  const styles = {
-    success: 'bg-success-light border-success/20 text-success',
-    error:   'bg-danger-light border-danger/20 text-danger',
-  };
-  const Icon = type === 'success' ? CheckCircle : AlertCircle;
+  const isSuccess = type === 'success';
+  const Icon = isSuccess ? CheckCircle : AlertCircle;
   return (
-    <div className={`flex items-center gap-2 px-4 py-3 rounded-xl border text-sm mb-4 ${styles[type]}`}>
-      <Icon className="w-4 h-4 flex-shrink-0" />
-      <span>{message}</span>
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px',
+      borderRadius: '8px', fontSize: '14px', marginBottom: '24px',
+      backgroundColor: isSuccess ? '#f0fdf4' : '#fef2f2',
+      border: `1px solid ${isSuccess ? '#bbf7d0' : '#fecaca'}`,
+      color: isSuccess ? '#15803d' : '#b91c1c'
+    }}>
+      <Icon style={{ width: '20px', height: '20px', flexShrink: 0 }} />
+      <span style={{ flex: 1, fontWeight: '500' }}>{message}</span>
     </div>
   );
 }
 
-function FormField({ label, id, hint, children }) {
+function FieldLabel({ children, htmlFor, required }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm font-semibold text-text-primary">{label}</label>
-      {hint && <p className="text-xs text-text-muted -mt-1">{hint}</p>}
-      {children}
-    </div>
+    <label
+      htmlFor={htmlFor}
+      style={{
+        display: 'block', fontSize: '12px', fontWeight: '700', color: '#475569',
+        textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px'
+      }}
+    >
+      {children}{required && <span style={{ color: '#ef4444', marginLeft: '4px' }}>*</span>}
+    </label>
   );
 }
-
-const inputClass = `w-full px-4 py-2.5 rounded-xl border border-border bg-surface text-sm text-text-primary
-                    placeholder-text-muted outline-none transition-all duration-200
-                    focus:border-primary-400 focus:ring-2 focus:ring-primary-100`;
 
 export default function MqttSettingsPage() {
-  const [form, setForm]       = useState({ mqtt_broker: '', mqtt_port: '1883', mqtt_topic: '', mqtt_username: '', mqtt_password: '' });
+  const [form, setForm] = useState({
+    mqtt_broker: '', mqtt_port: '1883', mqtt_topic: '',
+    mqtt_username: '', mqtt_password: ''
+  });
   const [hasPass, setHasPass] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving]   = useState(false);
-  const [alert, setAlert]     = useState({ type: '', message: '' });
+  const [saving, setSaving] = useState(false);
+  const [alert, setAlert] = useState({ type: '', message: '' });
 
   useEffect(() => {
     const load = async () => {
@@ -67,14 +71,14 @@ export default function MqttSettingsPage() {
         const res = await api.get('/api/settings/mqtt');
         const d = res.data;
         setForm({
-          mqtt_broker:   d.mqtt_broker   || '',
-          mqtt_port:     d.mqtt_port     || '1883',
-          mqtt_topic:    d.mqtt_topic    || '',
+          mqtt_broker: d.mqtt_broker || '',
+          mqtt_port: d.mqtt_port || '1883',
+          mqtt_topic: d.mqtt_topic || '',
           mqtt_username: d.mqtt_username || '',
-          mqtt_password: '', // Tidak menampilkan password asli
+          mqtt_password: '',
         });
         setHasPass(d.mqtt_password_set || false);
-      } catch (err) {
+      } catch {
         setAlert({ type: 'error', message: 'Gagal memuat konfigurasi MQTT.' });
       } finally {
         setLoading(false);
@@ -106,98 +110,157 @@ export default function MqttSettingsPage() {
 
   if (loading) {
     return (
-      <div className="p-6 flex justify-center items-center h-64">
-        <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: '#f8fafc' }}>
+        <Header title="MQTT Settings" connectionStatus="mock" />
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: '32px', height: '32px', border: '3px solid #e0e7ff', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-2xl">
-      <PageHeader
-        title="MQTT Settings"
-        subtitle="Konfigurasi koneksi ke MQTT Broker"
-        icon={Wifi}
-        iconColor="text-primary-600"
-        iconBg="bg-primary-50"
-      />
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: '#f8fafc' }}>
+      <Header title="MQTT Settings" connectionStatus="mock" />
 
-      <div className="glass-card rounded-2xl p-6">
-        <Alert {...alert} />
+      <div style={{ padding: '32px', width: '100%', maxWidth: '860px', margin: '0 auto', flex: 1, boxSizing: 'border-box' }}>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          {/* Broker & Port */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="sm:col-span-2">
-              <FormField label="Broker IP / Hostname" id="mqtt_broker" hint="Contoh: 192.168.1.100 atau broker.emqx.io">
-                <input id="mqtt_broker" name="mqtt_broker" type="text"
-                  value={form.mqtt_broker} onChange={handleChange}
-                  placeholder="192.168.1.100" className={inputClass} required />
-              </FormField>
+        {/* Page Heading */}
+        <div style={{ marginBottom: '24px' }}>
+          <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 4px 0', letterSpacing: '-0.025em' }}>
+            MQTT Settings
+          </h1>
+          <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>
+            Konfigurasi koneksi ke MQTT Broker
+          </p>
+        </div>
+
+        <AlertBanner {...alert} />
+
+        {/* Info box (Blue styling to match reference) */}
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '16px 20px',
+          borderRadius: '8px', marginBottom: '24px', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe'
+        }}>
+          <Info style={{ width: '20px', height: '20px', color: '#3b82f6', flexShrink: 0, marginTop: '2px' }} />
+          <p style={{ fontSize: '14px', color: '#1e3a8a', margin: 0, lineHeight: '1.5' }}>
+            Perubahan konfigurasi MQTT akan langsung aktif di runtime. Restart backend hanya diperlukan jika server mengalami masalah koneksi.
+          </p>
+        </div>
+
+        {/* Form Card */}
+        <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)', overflow: 'hidden' }}>
+          <form onSubmit={handleSubmit}>
+
+            {/* Card Body */}
+            <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+              {/* Broker + Port Row */}
+              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                <div style={{ flex: '3 1 250px' }}>
+                  <FieldLabel htmlFor="mqtt_broker" required>Broker IP / Hostname</FieldLabel>
+                  <input
+                    id="mqtt_broker" name="mqtt_broker" type="text"
+                    value={form.mqtt_broker} onChange={handleChange}
+                    placeholder="broker.emqx.io"
+                    style={inputStyle} required
+                  />
+                </div>
+                <div style={{ flex: '1 1 100px' }}>
+                  <FieldLabel htmlFor="mqtt_port" required>Port</FieldLabel>
+                  <input
+                    id="mqtt_port" name="mqtt_port" type="number"
+                    value={form.mqtt_port} onChange={handleChange}
+                    placeholder="1883" min="1" max="65535"
+                    style={inputStyle} required
+                  />
+                </div>
+              </div>
+
+              {/* Topic Row */}
+              <div>
+                <FieldLabel htmlFor="mqtt_topic" required>Topic</FieldLabel>
+                <input
+                  id="mqtt_topic" name="mqtt_topic" type="text"
+                  value={form.mqtt_topic} onChange={handleChange}
+                  placeholder="protos/pe11/data"
+                  style={inputStyle} required
+                />
+              </div>
+
+              {/* Divider for Credentials */}
+              <div style={{ borderTop: '1px solid #e2e8f0', margin: '8px 0' }} />
+
+              {/* Credentials Section */}
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#0f172a', margin: '0 0 16px 0' }}>
+                  Credentials <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#64748b' }}>(Optional)</span>
+                </h3>
+
+                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                  <div style={{ flex: '1 1 200px' }}>
+                    <FieldLabel htmlFor="mqtt_username">Username</FieldLabel>
+                    <input
+                      id="mqtt_username" name="mqtt_username" type="text"
+                      value={form.mqtt_username} onChange={handleChange}
+                      placeholder="Masukkan username"
+                      style={inputStyle}
+                    />
+                  </div>
+
+                  <div style={{ flex: '1 1 200px' }}>
+                    <FieldLabel htmlFor="mqtt_password">Password</FieldLabel>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        id="mqtt_password" name="mqtt_password"
+                        type={showPass ? 'text' : 'password'}
+                        value={form.mqtt_password} onChange={handleChange}
+                        placeholder={hasPass ? '••••••••' : 'Masukkan password'}
+                        style={{ ...inputStyle, paddingRight: '40px' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPass(!showPass)}
+                        style={{
+                          position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
+                          background: 'transparent', border: 'none', cursor: 'pointer', color: '#94a3b8',
+                          padding: '4px', display: 'flex', alignItems: 'center'
+                        }}
+                      >
+                        {showPass ? <EyeOff style={{ width: '18px', height: '18px' }} /> : <Eye style={{ width: '18px', height: '18px' }} />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <FormField label="Port" id="mqtt_port">
-              <input id="mqtt_port" name="mqtt_port" type="number"
-                value={form.mqtt_port} onChange={handleChange}
-                placeholder="1883" min="1" max="65535" className={inputClass} required />
-            </FormField>
-          </div>
 
-          {/* Topic */}
-          <FormField label="Topic" id="mqtt_topic" hint="Contoh: sensor/power_meter">
-            <input id="mqtt_topic" name="mqtt_topic" type="text"
-              value={form.mqtt_topic} onChange={handleChange}
-              placeholder="sensor/power_meter" className={inputClass} required />
-          </FormField>
-
-          {/* Divider */}
-          <div className="border-t border-border" />
-          <p className="text-sm font-semibold text-text-secondary -mb-1">Kredensial (Opsional)</p>
-
-          {/* Username */}
-          <FormField label="Username" id="mqtt_username">
-            <input id="mqtt_username" name="mqtt_username" type="text"
-              value={form.mqtt_username} onChange={handleChange}
-              placeholder="Kosongkan jika tidak ada" className={inputClass} />
-          </FormField>
-
-          {/* Password */}
-          <FormField
-            label="Password"
-            id="mqtt_password"
-            hint={hasPass ? '● Password sudah tersimpan. Isi untuk menggantinya.' : 'Kosongkan jika tidak ada.'}
-          >
-            <div className="relative">
-              <input id="mqtt_password" name="mqtt_password"
-                type={showPass ? 'text' : 'password'}
-                value={form.mqtt_password} onChange={handleChange}
-                placeholder={hasPass ? 'Isi untuk ganti password...' : 'Password MQTT'}
-                className={`${inputClass} pr-11`} />
-              <button type="button" onClick={() => setShowPass(!showPass)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary transition-colors">
-                {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            {/* Card Footer (Gray Background) */}
+            <div style={{
+              padding: '16px 32px', backgroundColor: '#f8fafc', borderTop: '1px solid #e2e8f0',
+              display: 'flex', justifyContent: 'flex-end'
+            }}>
+              <button
+                id="btn-mqtt-save"
+                type="submit"
+                disabled={saving}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 24px',
+                  borderRadius: '8px', backgroundColor: '#3b31d4', color: '#ffffff',
+                  fontSize: '14px', fontWeight: '600', border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
+                  opacity: saving ? 0.7 : 1, boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+                }}
+              >
+                {saving ? (
+                  <><RefreshCw style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} /><span>Menyimpan...</span></>
+                ) : (
+                  <><Save style={{ width: '16px', height: '16px' }} /><span>Simpan Perubahan</span></>
+                )}
               </button>
             </div>
-          </FormField>
 
-          {/* Info box */}
-          <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-primary-50 border border-primary-100 text-xs text-primary-700">
-            <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
-            <span>Perubahan konfigurasi MQTT akan langsung aktif di runtime. Restart backend hanya diperlukan jika server mengalami masalah koneksi.</span>
-          </div>
-
-          {/* Submit */}
-          <div className="flex justify-end pt-2">
-            <button type="submit" disabled={saving}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700
-                         text-white text-sm font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed
-                         shadow-md shadow-primary-200">
-              {saving
-                ? <><RefreshCw className="w-4 h-4 animate-spin" /><span>Menyimpan...</span></>
-                : <><Save className="w-4 h-4" /><span>Simpan Perubahan</span></>
-              }
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );

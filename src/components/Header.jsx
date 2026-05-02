@@ -1,70 +1,113 @@
-import { useState, useEffect, memo } from 'react';
-import { Zap, Wifi, WifiOff, Activity } from 'lucide-react';
-import { formatTime } from '../utils/formatters';
+/**
+ * Header.jsx — Top bar dengan page title, jam digital, tanggal, dan status koneksi.
+ * Update: Force padding agar lega dan simetris.
+ */
 
-const Header = memo(function Header({ connectionStatus }) {
-  const [currentTime, setCurrentTime] = useState(new Date());
+import { useState, useEffect, memo } from 'react';
+import { Wifi, WifiOff, Clock } from 'lucide-react';
+
+const HARI = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+const BULAN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+function formatTime(date) {
+  return date.toLocaleTimeString('id-ID', {
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+  });
+}
+
+function formatDate(date) {
+  const hari = HARI[date.getDay()];
+  const tgl = date.getDate();
+  const bln = BULAN[date.getMonth()];
+  const thn = date.getFullYear();
+  return `${hari}, ${tgl} ${bln} ${thn}`;
+}
+
+const Header = memo(function Header({ title, connectionStatus = 'mock' }) {
+  const [now, setNow] = useState(new Date());
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
   const statusConfig = {
-    connected: { color: 'bg-green-500', label: 'Connected', icon: Wifi },
-    mock: { color: 'bg-blue-500', label: 'Demo Mode', icon: Activity },
-    connecting: { color: 'bg-yellow-500', label: 'Connecting...', icon: Wifi },
-    disconnected: { color: 'bg-red-500', label: 'Disconnected', icon: WifiOff },
-    error: { color: 'bg-red-500', label: 'Error', icon: WifiOff },
+    connected: { dot: '#22c55e', label: 'Connected', icon: Wifi, bg: '#f0fdf4', text: '#16a34a' },
+    mock: { dot: '#6366f1', label: 'Connected', icon: Wifi, bg: '#eef2ff', text: '#4f46e5' },
+    connecting: { dot: '#f59e0b', label: 'Connecting…', icon: Wifi, bg: '#fffbeb', text: '#b45309' },
+    disconnected: { dot: '#ef4444', label: 'Disconnected', icon: WifiOff, bg: '#fef2f2', text: '#dc2626' },
+    error: { dot: '#ef4444', label: 'Error', icon: WifiOff, bg: '#fef2f2', text: '#dc2626' },
   };
 
-  const status = statusConfig[connectionStatus] || statusConfig.connecting;
-  const StatusIcon = status.icon;
+  const st = statusConfig[connectionStatus] || statusConfig.connecting;
+  const Icon = st.icon;
 
   return (
-    <header className="glass-card rounded-2xl px-6 py-4 flex items-center justify-between animate-fade-in-up">
-      {/* Left: Logo + Title */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-lg shadow-primary-500/20">
-          <Zap className="w-5 h-5 text-white" strokeWidth={2.5} />
-        </div>
-        <div>
-          <h1 className="text-lg font-bold text-text-primary tracking-tight leading-tight">
-            Power Monitor
-          </h1>
-          <p className="text-xs text-text-muted font-medium">
-            Industrial IoT Dashboard
-          </p>
-        </div>
+    <header
+      className="flex items-center justify-between w-full bg-white border-b border-slate-200"
+      style={{
+        height: '72px',      /* Tambah tinggi sedikit agar lebih lega */
+        paddingLeft: '32px',  /* Paksa jarak kiri */
+        paddingRight: '32px'  /* Paksa jarak kanan */
+      }}
+    >
+      {/* Left: Page Title */}
+      <div>
+        {title && (
+          <h2 className="text-[20px] font-bold text-slate-900 tracking-tight">
+            {title}
+          </h2>
+        )}
       </div>
 
-      {/* Center: Live Clock */}
-      <div className="hidden sm:flex flex-col items-center">
-        <span className="font-mono text-2xl font-semibold text-text-primary tracking-wider">
-          {formatTime(currentTime)}
-        </span>
-        <span className="text-xs text-text-muted font-medium">
-          {currentTime.toLocaleDateString('id-ID', {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-          })}
-        </span>
-      </div>
+      {/* Right: Date · Time · Status */}
+      <div className="flex items-center" style={{ gap: '24px' }}>
 
-      {/* Right: Connection Status */}
-      <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-surface-tertiary/80">
-        <div className="relative flex items-center">
-          <span className={`w-2 h-2 rounded-full ${status.color}`} />
-          {(connectionStatus === 'connected' || connectionStatus === 'mock') && (
-            <span className={`absolute w-2 h-2 rounded-full ${status.color} animate-pulse-live`} />
-          )}
-        </div>
-        <StatusIcon className="w-3.5 h-3.5 text-text-secondary" />
-        <span className="text-xs font-medium text-text-secondary">
-          {status.label}
+        {/* Date */}
+        <span className="text-[13px] font-medium text-slate-500 hidden sm:block">
+          {formatDate(now)}
         </span>
+
+        {/* Divider */}
+        <span className="w-px h-5 bg-slate-200 hidden sm:block" />
+
+        {/* Clock */}
+        <div className="flex items-center text-slate-700" style={{ gap: '8px' }}>
+          <Clock className="w-4.5 h-4.5 text-slate-400" strokeWidth={2} />
+          <span className="font-mono text-[14px] font-semibold tabular-nums tracking-tight">
+            {formatTime(now)}
+          </span>
+        </div>
+
+        {/* Divider */}
+        <span className="w-px h-5 bg-slate-200" />
+
+        {/* Connection Status Pill */}
+        <div
+          className="flex items-center rounded-full"
+          style={{
+            background: st.bg,
+            padding: '6px 14px',
+            gap: '8px'
+          }}
+          id="header-connection-status"
+        >
+          {/* Animated dot */}
+          <span className="relative flex h-2 w-2">
+            <span
+              className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-50"
+              style={{ background: st.dot }}
+            />
+            <span
+              className="relative inline-flex rounded-full h-2 w-2"
+              style={{ background: st.dot }}
+            />
+          </span>
+          <Icon className="w-3.5 h-3.5" style={{ color: st.text }} strokeWidth={2.5} />
+          <span className="text-[12px] font-bold" style={{ color: st.text }}>
+            {st.label}
+          </span>
+        </div>
       </div>
     </header>
   );

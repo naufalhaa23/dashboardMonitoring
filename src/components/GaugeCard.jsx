@@ -1,13 +1,21 @@
+/**
+ * GaugeCard.jsx — Gauge setengah lingkaran dengan jarum indikator (ECharts).
+ *
+ * CATATAN: Komponen ini sekarang "bare" — tidak memiliki wrapper card sendiri.
+ * Container/card-nya dikelola oleh parent (DashboardPage).
+ * Logic gauge (ECharts semicircle + jarum) TIDAK DIUBAH.
+ */
+
 import { memo, useRef, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 
-const GaugeCard = memo(function GaugeCard({ 
-  value = 0, 
-  min = 0, 
-  max = 300, 
-  unit = 'V', 
-  label = 'Voltage', 
-  color = '#0891b2',
+const GaugeCard = memo(function GaugeCard({
+  value = 0,
+  min = 0,
+  max = 300,
+  unit = 'V',
+  label = 'Voltage',
+  color = '#dc2626',
   warningMin,
   warningMax,
   dangerMin,
@@ -76,11 +84,11 @@ const GaugeCard = memo(function GaugeCard({
         endAngle: -30,
         min: min,
         max: max,
-        center: ['50%', '58%'],
-        radius: '92%',
+        center: ['50%', '60%'],
+        radius: '90%',
         progress: {
           show: true,
-          width: 14,
+          width: 12,
           roundCap: true,
           itemStyle: {
             color: {
@@ -95,14 +103,14 @@ const GaugeCard = memo(function GaugeCard({
         },
         axisLine: {
           lineStyle: {
-            width: 14,
+            width: 12,
             color: [[1, '#f1f5f9']],
           },
           roundCap: true,
         },
         axisTick: {
           show: true,
-          distance: -22,
+          distance: -20,
           length: 4,
           lineStyle: {
             color: '#cbd5e1',
@@ -111,7 +119,7 @@ const GaugeCard = memo(function GaugeCard({
           splitNumber: 5,
         },
         splitLine: {
-          distance: -26,
+          distance: -24,
           length: 8,
           lineStyle: {
             color: '#94a3b8',
@@ -119,19 +127,19 @@ const GaugeCard = memo(function GaugeCard({
           },
         },
         axisLabel: {
-          distance: -14,
+          distance: -12,
           color: '#94a3b8',
           fontSize: 9,
           fontFamily: 'JetBrains Mono, monospace',
-          formatter: function(val) {
+          formatter: function (val) {
             if (val === min || val === max || val === (min + max) / 2) return val;
             return '';
           }
         },
         pointer: {
           icon: 'path://M12.8,0.7l12,40.1H0.7L12.8,0.7z',
-          length: '55%',
-          width: 7,
+          length: '52%',
+          width: 6,
           offsetCenter: [0, '-8%'],
           itemStyle: {
             color: activeColor,
@@ -143,7 +151,7 @@ const GaugeCard = memo(function GaugeCard({
         anchor: {
           show: true,
           showAbove: true,
-          size: 14,
+          size: 12,
           itemStyle: {
             borderWidth: 3,
             borderColor: activeColor,
@@ -157,12 +165,12 @@ const GaugeCard = memo(function GaugeCard({
         },
         detail: {
           valueAnimation: true,
-          fontSize: 28,
+          fontSize: 26,
           fontFamily: 'JetBrains Mono, monospace',
-          fontWeight: 600,
+          fontWeight: 700,
           color: activeColor,
-          offsetCenter: [0, '32%'],
-          formatter: function(val) {
+          offsetCenter: [0, '34%'],
+          formatter: function (val) {
             return val.toFixed(unit === 'V' ? 1 : 2);
           },
         },
@@ -174,8 +182,9 @@ const GaugeCard = memo(function GaugeCard({
   };
 
   return (
-    <div className="glass-card rounded-2xl p-4 flex flex-col items-center animate-fade-in-up">
-      <div className="w-full" style={{ height: 200 }}>
+    <div className="flex flex-col items-center w-full">
+      {/* Gauge chart */}
+      <div className="w-full" style={{ height: 180 }}>
         <ReactECharts
           ref={chartRef}
           option={option}
@@ -185,11 +194,12 @@ const GaugeCard = memo(function GaugeCard({
           lazyUpdate={true}
         />
       </div>
-      <div className="flex items-center gap-2 -mt-2">
-        <span className="text-sm font-semibold text-text-primary">{label}</span>
+      {/* Label + unit badge */}
+      <div className="flex items-center gap-6 -mt-3 pb-3">
+        <span className="text-[13px] font-semibold text-text-primary">{label}</span>
         <span
-          className="text-xs font-mono font-medium px-2 py-0.5 rounded-full"
-          style={{ background: activeColor + '15', color: activeColor }}
+          className="text-[11px] font-bold font-mono px-2 py-0.5 rounded-full"
+          style={{ background: activeColor + '18', color: activeColor }}
         >
           {unit}
         </span>

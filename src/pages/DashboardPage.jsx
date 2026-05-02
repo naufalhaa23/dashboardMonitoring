@@ -1,8 +1,3 @@
-/**
- * DashboardPage.jsx — Halaman dashboard monitoring real-time.
- * Konten dipindahkan dari App.jsx lama ke halaman ini.
- */
-
 import { Banknote, Zap, ZapOff } from 'lucide-react';
 import Header from '../components/Header';
 import GaugeCard from '../components/GaugeCard';
@@ -20,121 +15,74 @@ export default function DashboardPage() {
   const trendData = useTrendData(displayData, 5000, 300);
 
   return (
-    <div className="min-h-screen p-4 md:p-6 max-w-[1440px] mx-auto">
-      <div className="flex flex-col gap-4">
-        {/* Header */}
-        <Header connectionStatus={connectionStatus} />
+    <div className="flex flex-col min-h-screen bg-slate-50">
+      <Header title="Dashboard Reporting" connectionStatus={connectionStatus} />
 
-        {/* Row 1: Gauges (R, S, T) */}
-        <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Phase R */}
-            <div className="flex flex-col sm:flex-row lg:flex-col gap-4 bg-surface-secondary/30 rounded-2xl p-3">
-              <div className="w-full flex-1">
-                <GaugeCard value={displayData?.voltage1 || 0} {...GAUGE_CONFIG.voltage} label="Voltage (R)" />
-              </div>
-              <div className="w-full flex-1">
-                <GaugeCard value={displayData?.ampere1 || 0} {...GAUGE_CONFIG.ampere} label="Ampere (R)" />
-              </div>
+      {/* Gunakan gap-6 untuk jarak antar baris utama */}
+      <div className="p-6 w-full max-w-[1600px] mx-auto flex-1 flex flex-col gap-6">
+
+        {/* ── Gauge Section ─────────────────── */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in-up" style={{ marginTop: '10px' }}>
+          {/* Baris 1: Voltage */}
+          {[
+            { value: displayData?.voltage1 || 0, label: 'Voltage (R)', config: GAUGE_CONFIG.voltage, color: '#dc2626' },
+            { value: displayData?.voltage2 || 0, label: 'Voltage (S)', config: GAUGE_CONFIG.voltage, color: '#dc2626' },
+            { value: displayData?.voltage3 || 0, label: 'Voltage (T)', config: GAUGE_CONFIG.voltage, color: '#dc2626' },
+          ].map(({ value, label, config, color }) => (
+            <div key={label} className="glass-card bg-white rounded-2xl p-4 flex justify-center items-center shadow-sm">
+              <GaugeCard value={value} {...config} color={color} label={label} />
             </div>
-            {/* Phase S */}
-            <div className="flex flex-col sm:flex-row lg:flex-col gap-4 bg-surface-secondary/30 rounded-2xl p-3">
-              <div className="w-full flex-1">
-                <GaugeCard value={displayData?.voltage2 || 0} {...GAUGE_CONFIG.voltage} label="Voltage (S)" />
-              </div>
-              <div className="w-full flex-1">
-                <GaugeCard value={displayData?.ampere2 || 0} {...GAUGE_CONFIG.ampere} label="Ampere (S)" />
-              </div>
+          ))}
+
+          {/* Baris 2: Ampere */}
+          {[
+            { value: displayData?.ampere1 || 0, label: 'Ampere (R)', config: GAUGE_CONFIG.ampere, color: '#059669' },
+            { value: displayData?.ampere2 || 0, label: 'Ampere (S)', config: GAUGE_CONFIG.ampere, color: '#059669' },
+            { value: displayData?.ampere3 || 0, label: 'Ampere (T)', config: GAUGE_CONFIG.ampere, color: '#059669' },
+          ].map(({ value, label, config, color }) => (
+            <div key={label} className="glass-card bg-white rounded-2xl p-4 flex justify-center items-center shadow-sm">
+              <GaugeCard value={value} {...config} color={color} label={label} />
             </div>
-            {/* Phase T */}
-            <div className="flex flex-col sm:flex-row lg:flex-col gap-4 bg-surface-secondary/30 rounded-2xl p-3">
-              <div className="w-full flex-1">
-                <GaugeCard value={displayData?.voltage3 || 0} {...GAUGE_CONFIG.voltage} label="Voltage (T)" />
-              </div>
-              <div className="w-full flex-1">
-                <GaugeCard value={displayData?.ampere3 || 0} {...GAUGE_CONFIG.ampere} label="Ampere (T)" />
-              </div>
+          ))}
+        </div>
+
+        {/* ── Real-time Power Info Bar ──────────────────────────── */}
+        <div
+          className="glass-card bg-white border border-slate-100 rounded-2xl flex flex-wrap items-center justify-between gap-4 animate-fade-in-up shadow-sm"
+          style={{ padding: '20px 24px' }} /* <-- INI KUNCINYA, dipaksa lega */
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#fff7ed' }}>
+              <Zap className="w-5 h-5 text-orange-500" strokeWidth={2.5} />
             </div>
+            <div className="flex items-center gap-3">
+              <span className="text-[14px] text-slate-500 font-semibold">Daya Saat Ini</span>
+              <span className="font-mono text-[22px] font-bold text-orange-600">{formatWatt(displayData?.watt || 0)}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-6 text-[13px] font-semibold">
+            <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-red-600" /><span className="text-slate-400">V_AVG: <span className="text-slate-700">{displayData?.avgVoltage?.toFixed(1) || '0.0'}V</span></span></div>
+            <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-emerald-600" /><span className="text-slate-400">A_TOT: <span className="text-slate-700">{displayData?.totalAmpere?.toFixed(2) || '0.00'}A</span></span></div>
+            <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-orange-600" /><span className="text-slate-700">{displayData?.watt?.toFixed(0) || '0'}W</span></div>
           </div>
         </div>
 
-        {/* Row 2: Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <SummaryCard
-            title="Total Biaya Hari Ini"
-            value={displayData?.totalRupiah || 0}
-            formattedValue={(v) => formatRupiah(v)}
-            subtitle="Akumulasi sejak 00:00 WIB"
-            icon={Banknote}
-            color="#7c3aed"
-            bgColor="#f5f3ff"
-          />
-          <SummaryCard
-            title="kWh WBP"
-            value={displayData?.kwhWBP || 0}
-            formattedValue={(v) => `${v.toFixed(2)} kWh`}
-            subtitle="Waktu Beban Puncak (18:00–22:00)"
-            icon={Zap}
-            color="#dc2626"
-            bgColor="#fef2f2"
-          />
-          <SummaryCard
-            title="kWh LWBP"
-            value={displayData?.kwhLWBP || 0}
-            formattedValue={(v) => `${v.toFixed(2)} kWh`}
-            subtitle="Luar Waktu Beban Puncak"
-            icon={ZapOff}
-            color="#16a34a"
-            bgColor="#f0fdf4"
-          />
-          <StatusIndicator
-            status={displayData?.status || 'LWBP'}
-            tariff={displayData?.tariff}
-          />
+        {/* ── Charts ─────────────────────────────────── */}
+        <div
+          className="glass-card bg-white border border-slate-100 rounded-2xl animate-fade-in-up shadow-sm"
+          style={{ padding: '24px' }} /* <-- INI KUNCINYA, dipaksa lega */
+        >
+          <PowerTrendChart trendData={trendData} />
         </div>
 
-        {/* Row 3: Real-time Power Info Bar */}
-        <div className="glass-card rounded-2xl px-5 py-3 flex flex-wrap items-center justify-between gap-4 animate-fade-in-up" style={{ animationDelay: '0.15s' }}>
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-power-light flex items-center justify-center">
-              <Zap className="w-4 h-4 text-power" strokeWidth={2.5} />
-            </div>
-            <div>
-              <p className="text-xs text-text-muted font-medium">Daya Saat Ini</p>
-              <p className="font-mono text-lg font-bold text-power">
-                {formatWatt(displayData?.watt || 0)}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-6 text-xs text-text-muted">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-voltage" />
-              <span className="font-mono font-medium">V_AVG: {displayData?.avgVoltage?.toFixed(1) || '0.0'}V</span>
-            </div>
-            <span className="text-text-muted/30">×</span>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-ampere" />
-              <span className="font-mono font-medium">A_TOT: {displayData?.totalAmpere?.toFixed(2) || '0.00'}A</span>
-            </div>
-            <span className="text-text-muted/30">=</span>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-power" />
-              <span className="font-mono font-semibold text-text-primary">{displayData?.watt?.toFixed(0) || '0'}W</span>
-            </div>
-          </div>
+        <div
+          className="glass-card bg-white border border-slate-100 rounded-2xl animate-fade-in-up shadow-sm"
+          style={{ padding: '24px' }} /* <-- INI KUNCINYA, dipaksa lega */
+        >
+          <HistoricalSection />
         </div>
 
-        {/* Row 4: Power Trend Chart */}
-        <PowerTrendChart trendData={trendData} />
-
-        {/* Row 5: Historical Section */}
-        <HistoricalSection />
-
-        {/* Footer */}
-        <Footer
-          lastUpdate={displayData?.timestamp}
-          connectionStatus={connectionStatus}
-        />
+        <Footer lastUpdate={displayData?.timestamp} connectionStatus={connectionStatus} />
       </div>
     </div>
   );

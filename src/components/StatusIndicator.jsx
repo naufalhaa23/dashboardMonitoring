@@ -1,64 +1,53 @@
-import { memo } from 'react';
-import { Zap, Leaf } from 'lucide-react';
-import { TARIFF } from '../utils/constants';
-import { formatRupiah } from '../utils/formatters';
+import { memo, useState, useEffect } from 'react';
 
-const StatusIndicator = memo(function StatusIndicator({ status, tariff }) {
+const StatusIndicator = memo(function StatusIndicator({ status }) {
   const isWBP = status === 'WBP';
+  const [nextShift, setNextShift] = useState('');
+
+  useEffect(() => {
+    const calcNextShift = () => {
+      const now = new Date();
+      const hours = now.getHours();
+      let targetHour = 18;
+      const futureNow = new Date(now);
+      if (hours >= 18 && hours < 22) { targetHour = 22; } else if (hours >= 22) { targetHour = 18; futureNow.setDate(futureNow.getDate() + 1); }
+      const target = new Date(futureNow); target.setHours(targetHour, 0, 0, 0);
+      const diffMs = target - new Date();
+      const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      setNextShift(`Next shift in ${diffHrs}h ${diffMins}m`);
+    };
+
+    calcNextShift();
+    const timer = setInterval(calcNextShift, 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
-    <div className={`glass-card rounded-2xl p-5 flex flex-col justify-center animate-fade-in-up ${isWBP ? 'glow-wbp' : 'glow-lwbp'}`}>
-      {/* Status Badge */}
-      <div className="flex items-center gap-3 mb-4">
-        <div
-          className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-            isWBP
-              ? 'bg-gradient-to-br from-red-500 to-amber-500 shadow-lg shadow-red-500/20'
-              : 'bg-gradient-to-br from-emerald-500 to-teal-500 shadow-lg shadow-emerald-500/20'
-          }`}
-        >
-          {isWBP ? (
-            <Zap className="w-6 h-6 text-white" strokeWidth={2.5} />
-          ) : (
-            <Leaf className="w-6 h-6 text-white" strokeWidth={2.5} />
-          )}
-        </div>
+    <div
+      className="glass-card bg-white border border-slate-100 rounded-2xl flex flex-col justify-between h-full shadow-sm"
+      style={{ padding: '24px', minHeight: '150px' }}
+    >
+      {/* BUNGKUSAN LUAR: Pakai inline padding 24px agar dijamin lega */}
+      <div className="mb-4">
+        <p className="text-[12px] font-bold text-slate-500 uppercase tracking-widest leading-tight">
+          Tariff Status
+        </p>
+      </div>
 
-        <div>
-          <div className="flex items-center gap-2">
-            <span
-              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wide ${
-                isWBP
-                  ? 'bg-red-100 text-red-700'
-                  : 'bg-emerald-100 text-emerald-700'
-              }`}
-            >
-              <span
-                className={`w-1.5 h-1.5 rounded-full ${
-                  isWBP ? 'bg-red-500 animate-pulse-live' : 'bg-emerald-500'
-                }`}
-              />
-              {isWBP ? 'WBP' : 'LWBP'}
-            </span>
-          </div>
-          <p className="text-sm font-medium text-text-secondary mt-0.5">
-            {isWBP ? 'Waktu Beban Puncak' : 'Luar Waktu Beban Puncak'}
-          </p>
+      <div className="flex gap-3 flex-1 items-center mb-4">
+        <div className={`flex-1 flex flex-col items-center justify-center rounded-xl py-2.5 transition-colors ${isWBP ? 'bg-red-50' : 'bg-slate-50'}`}>
+          <span className={`text-[12px] font-bold tracking-widest ${isWBP ? 'text-red-700' : 'text-slate-400'}`}>WBP</span>
+          <span className={`text-[13px] font-semibold mt-0.5 ${isWBP ? 'text-red-600' : 'text-slate-400'}`}>{isWBP ? 'Active' : 'Inactive'}</span>
+        </div>
+        <div className={`flex-1 flex flex-col items-center justify-center rounded-xl py-2.5 transition-colors ${!isWBP ? 'bg-slate-50' : 'bg-slate-50'}`}>
+          <span className={`text-[12px] font-bold tracking-widest ${!isWBP ? 'text-slate-700' : 'text-slate-400'}`}>LWBP</span>
+          <span className={`text-[13px] font-semibold mt-0.5 ${!isWBP ? 'text-slate-600' : 'text-slate-400'}`}>{!isWBP ? 'Active' : 'Inactive'}</span>
         </div>
       </div>
 
-      {/* Schedule Info */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-surface-tertiary/60">
-          <span className="text-xs text-text-muted font-medium">Jadwal WBP</span>
-          <span className="text-xs font-mono font-semibold text-text-primary">18:00 — 22:00</span>
-        </div>
-        <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-surface-tertiary/60">
-          <span className="text-xs text-text-muted font-medium">Tarif Aktif</span>
-          <span className={`text-xs font-mono font-bold ${isWBP ? 'text-red-600' : 'text-emerald-600'}`}>
-            {formatRupiah(tariff || (isWBP ? TARIFF.WBP : TARIFF.LWBP))}/kWh
-          </span>
-        </div>
+      <div className="mt-auto">
+        <span className="text-[13px] font-medium text-slate-500">{nextShift}</span>
       </div>
     </div>
   );

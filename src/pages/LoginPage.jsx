@@ -1,9 +1,6 @@
 /**
- * LoginPage.jsx — Halaman login dengan glassmorphism design.
- *
- * - POST ke /api/auth/login
- * - Simpan token & user ke AuthContext
- * - Redirect ke /dashboard setelah login berhasil
+ * LoginPage.jsx — Halaman login minimalis centered.
+ * Latar belakang pola titik-titik halus, kartu tepat di tengah layar.
  */
 
 import { useState } from 'react';
@@ -13,13 +10,13 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
 export default function LoginPage() {
-  const navigate  = useNavigate();
+  const navigate = useNavigate();
   const { login } = useAuth();
 
-  const [form, setForm]         = useState({ username: '', password: '' });
+  const [form, setForm] = useState({ username: '', password: '' });
   const [showPass, setShowPass] = useState(false);
-  const [error, setError]       = useState('');
-  const [loading, setLoading]   = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -46,101 +43,88 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4"
-         style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #0f2027 100%)' }}>
+    /* Full-screen dot-pattern background. Ditambah relative agar footer absolut pas di bawah */
+    <div className="bg-dots min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
 
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-600/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-violet-500/10 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-cyan-500/5 rounded-full blur-2xl" />
-      </div>
+      {/* Card Container */}
+      <div className="w-full max-w-[420px] animate-fade-in-up">
 
-      {/* Login Card */}
-      <div className="relative w-full max-w-md animate-fade-in-up">
-        <div className="rounded-2xl p-8"
-             style={{
-               background: 'rgba(255,255,255,0.07)',
-               backdropFilter: 'blur(20px)',
-               WebkitBackdropFilter: 'blur(20px)',
-               border: '1px solid rgba(255,255,255,0.12)',
-               boxShadow: '0 25px 50px rgba(0,0,0,0.4)',
-             }}>
+        {/* Menggunakan class CSS khusus kita, menghapus inline styles & tailwind padding */}
+        <div className="login-card-wrapper">
 
-          {/* Header */}
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-14 h-14 rounded-2xl bg-primary-600 flex items-center justify-center mb-4 shadow-lg shadow-primary-900/50">
-              <Zap className="w-7 h-7 text-white" strokeWidth={2.5} />
+          {/* Brand */}
+          <div className="flex flex-col items-center mb-10"> {/* mb diperbesar untuk ruang napas */}
+            <div
+              className="w-[60px] h-[60px] rounded-[18px] flex items-center justify-center mb-5"
+              style={{
+                background: '#4f46e5',
+                boxShadow: '0 8px 20px rgba(79, 70, 229, 0.30)', // Efek glow petir tetap dipertahankan
+              }}
+            >
+              <Zap className="w-7 h-7 text-white" strokeWidth={2.5} fill="rgba(255,255,255,0.15)" />
             </div>
-            <h1 className="text-2xl font-bold text-white">IoT Power Meter</h1>
-            <p className="text-sm text-white/50 mt-1">Masuk ke Dashboard Monitoring</p>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight mb-2">
+              IoT Power Meter
+            </h1>
+            <p className="text-sm font-normal text-slate-500">
+              Masuk ke Dashboard Monitoring
+            </p>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-6"> {/* Gap antar input diperbesar */}
 
             {/* Username */}
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="username" className="text-xs font-semibold text-white/60 uppercase tracking-wider">
+            <div className="flex flex-col gap-2"> {/* Gap label dan input */}
+              <label htmlFor="login-username" className="text-sm font-semibold text-slate-700">
                 Username
               </label>
               <input
-                id="username"
+                id="login-username"
                 name="username"
                 type="text"
                 autoComplete="username"
                 autoFocus
                 value={form.username}
                 onChange={handleChange}
-                placeholder="Masukkan username"
-                className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-white/30
-                           outline-none transition-all duration-200"
-                style={{
-                  background: 'rgba(255,255,255,0.08)',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                }}
-                onFocus={e => { e.target.style.borderColor = 'rgba(99,102,241,0.6)'; e.target.style.background = 'rgba(255,255,255,0.11)'; }}
-                onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.12)'; e.target.style.background = 'rgba(255,255,255,0.08)'; }}
+                placeholder="Masukkan username Anda"
+                className="login-input" /* Class CSS kita */
               />
             </div>
 
             {/* Password */}
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="password" className="text-xs font-semibold text-white/60 uppercase tracking-wider">
+            <div className="flex flex-col gap-2">
+              <label htmlFor="login-password" className="text-sm font-semibold text-slate-700">
                 Password
               </label>
               <div className="relative">
                 <input
-                  id="password"
+                  id="login-password"
                   name="password"
                   type={showPass ? 'text' : 'password'}
                   autoComplete="current-password"
                   value={form.password}
                   onChange={handleChange}
-                  placeholder="Masukkan password"
-                  className="w-full px-4 py-3 pr-11 rounded-xl text-sm text-white placeholder-white/30
-                             outline-none transition-all duration-200"
-                  style={{
-                    background: 'rgba(255,255,255,0.08)',
-                    border: '1px solid rgba(255,255,255,0.12)',
-                  }}
-                  onFocus={e => { e.target.style.borderColor = 'rgba(99,102,241,0.6)'; e.target.style.background = 'rgba(255,255,255,0.11)'; }}
-                  onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.12)'; e.target.style.background = 'rgba(255,255,255,0.08)'; }}
+                  placeholder="Masukkan password Anda"
+                  className="login-input pr-12" /* Class CSS kita + padding kanan agar tidak nabrak icon */
                 />
                 <button
                   type="button"
                   onClick={() => setShowPass(!showPass)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1"
+                  tabIndex={-1}
                 >
-                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPass
+                    ? <EyeOff className="w-5 h-5" />
+                    : <Eye className="w-5 h-5" />
+                  }
                 </button>
               </div>
             </div>
 
-            {/* Error message */}
+            {/* Error */}
             {error && (
-              <div className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm text-red-300"
-                   style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.2)' }}>
+              <div className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm text-red-600 bg-red-50 border border-red-100">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{error}</span>
               </div>
@@ -148,13 +132,10 @@ export default function LoginPage() {
 
             {/* Submit */}
             <button
+              id="btn-login-submit"
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl text-sm font-semibold text-white
-                         bg-primary-600 hover:bg-primary-700 active:bg-primary-800
-                         disabled:opacity-60 disabled:cursor-not-allowed
-                         transition-all duration-200 shadow-lg shadow-primary-900/40 mt-2
-                         flex items-center justify-center gap-2"
+              className="login-btn mt-2 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
@@ -166,13 +147,13 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-
-          {/* Footer hint */}
-          <p className="text-center text-xs text-white/30 mt-6">
-            IoT Power Meter Dashboard v1.0
-          </p>
         </div>
       </div>
+
+      {/* Footer */}
+      <p className="login-version-text absolute bottom-8">
+        Versi 2.4.1 (Build 1042)
+      </p>
     </div>
   );
 }

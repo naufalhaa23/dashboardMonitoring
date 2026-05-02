@@ -8,12 +8,12 @@ import Sidebar from './Sidebar';
 
 export default function MainLayout() {
   return (
-    <div className="flex min-h-screen" style={{ background: 'linear-gradient(135deg, #f0f4ff 0%, #f8fafc 50%, #f0fdf4 100%)' }}>
+    <div className="flex min-h-screen bg-slate-50">
       {/* Sidebar navigasi */}
       <Sidebar />
 
       {/* Konten halaman — berubah sesuai route aktif */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto min-w-0">
         <Outlet />
       </main>
     </div>
