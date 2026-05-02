@@ -1,10 +1,20 @@
 """
-server.py — Flask-SocketIO server dengan REST API untuk data historis.
+server.py — Flask-SocketIO server dengan REST API, Auth, dan Settings.
 
 Endpoints:
-  - Socket.io event 'sensor-data': real-time data (di-emit oleh worker)
-  - GET /api/history?from=YYYY-MM-DD&to=YYYY-MM-DD: data historis harian
-  - GET /api/health: health check
+  POST /api/auth/login       — login, return JWT
+  GET  /api/auth/me          — cek token & return profil user
+  GET  /api/users            — daftar user (Admin)
+  POST /api/users            — buat user (Admin)
+  DELETE /api/users/<id>     — hapus user (Admin)
+  PUT  /api/users/<id>/role  — ubah role (Admin)
+  GET  /api/settings/mqtt    — baca config MQTT (Admin)
+  PUT  /api/settings/mqtt    — update config MQTT (Admin)
+  GET  /api/settings/influx  — baca config InfluxDB (Admin)
+  PUT  /api/settings/influx  — update config InfluxDB (Admin)
+  GET  /api/history          — data historis harian (Auth Required)
+  GET  /api/health           — health check (Public)
+  Socket.io 'sensor-data'    — real-time data (di-emit oleh worker)
 """
 
 import logging
@@ -13,14 +23,33 @@ from flask_cors import CORS
 from flask_socketio import SocketIO
 
 import config
+from database import db, init_db
+from auth import auth_bp, require_auth
+from routes.users import users_bp
+from routes.settings import settings_bp
 
 logger = logging.getLogger(__name__)
 
-# ── Flask App ───────────────────────────────────────────────────
+# ── Flask App ────────────────────────────────────────────────────────────────
 app = Flask(__name__)
+
+# Konfigurasi SQLite database
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SECRET_KEY"] = config.JWT_SECRET_KEY
+
+# Init SQLAlchemy dengan app
+db.init_app(app)
+
+# CORS: izinkan semua origin (untuk dev); di production batasi sesuai domain
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# ── Socket.io ───────────────────────────────────────────────────
+# ── Register Blueprints ───────────────────────────────────────────────────────
+app.register_blueprint(auth_bp)
+app.register_blueprint(users_bp)
+app.register_blueprint(settings_bp)
+
+# ── Socket.io ────────────────────────────────────────────────────────────────
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
@@ -31,7 +60,7 @@ socketio = SocketIO(
     engineio_logger=False,
 )
 
-# ── Lazy InfluxDB client (hanya dibuat saat dibutuhkan) ─────────
+# ── Lazy InfluxDB client ──────────────────────────────────────────────────────
 _influx = None
 
 
@@ -44,7 +73,7 @@ def _get_influx():
     return _influx
 
 
-# ── Socket.io Events ───────────────────────────────────────────
+# ── Socket.io Events ─────────────────────────────────────────────────────────
 
 @socketio.on("connect")
 def handle_connect():
@@ -56,28 +85,17 @@ def handle_disconnect():
     logger.info("🔌 Client terputus: %s", request.sid)
 
 
-# ── REST API ────────────────────────────────────────────────────
+# ── REST API ─────────────────────────────────────────────────────────────────
 
 @app.route("/api/history", methods=["GET"])
+@require_auth
 def get_history():
     """
-    GET /api/history?from=2026-04-01&to=2026-04-07
-
-    Returns JSON array sesuai format frontend useHistoricalData.js:
-    [
-      {
-        "date": "2026-04-01",
-        "totalRupiah": 245000,
-        "kwhWBP": 45.23,
-        "kwhLWBP": 132.87,
-        "totalKwh": 178.10,
-        "totalWatt": 7420
-      },
-      ...
-    ]
+    GET /api/history?from=YYYY-MM-DD&to=YYYY-MM-DD
+    Memerlukan JWT yang valid (Admin atau Viewer).
     """
     from_date = request.args.get("from")
-    to_date = request.args.get("to")
+    to_date   = request.args.get("to")
 
     if not from_date or not to_date:
         return jsonify({"error": "Parameter 'from' dan 'to' diperlukan"}), 400
@@ -93,16 +111,16 @@ def get_history():
 
 @app.route("/api/health", methods=["GET"])
 def health_check():
-    """Health check endpoint — ringan, tanpa query InfluxDB."""
+    """Health check endpoint — public, tanpa auth."""
     return jsonify({
-        "status": "ok",
+        "status":             "ok",
         "influxdb_configured": bool(config.INFLUX_URL),
-        "mock_modbus": config.MOCK_MODBUS,
-        "server_port": config.SERVER_PORT,
+        "mock_mqtt":          config.MOCK_MQTT,
+        "server_port":        config.SERVER_PORT,
     })
 
 
-# ── Accessor ────────────────────────────────────────────────────
+# ── Accessor ─────────────────────────────────────────────────────────────────
 
 def get_socketio():
     """Return socketio instance untuk digunakan oleh worker."""

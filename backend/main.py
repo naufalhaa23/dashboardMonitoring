@@ -15,6 +15,7 @@ import sys
 import config
 from server import socketio, app
 from worker import PowerMonitorWorker
+from database import init_db
 
 # ── Logging Setup ───────────────────────────────────────────────
 logging.basicConfig(
@@ -66,6 +67,10 @@ def main():
     logger.info("  WBP      : %02d:00 — %02d:00 WIB",
                 config.WBP_START_HOUR, config.WBP_END_HOUR)
     logger.info("=" * 60)
+
+    # Inisialisasi database (buat tabel + seed admin default jika belum ada)
+    logger.info("🗄️  Inisialisasi database...")
+    init_db(app)
 
     # Start worker di background thread
     worker_thread = threading.Thread(target=run_worker, daemon=True)

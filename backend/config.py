@@ -44,6 +44,8 @@ TARIFF_LWBP = _float("TARIFF_LWBP", 1114.74)  # Rp/kWh LWBP
 WBP_START_HOUR = _int("WBP_START_HOUR", 18)    # 18:00
 WBP_END_HOUR = _int("WBP_END_HOUR", 22)        # 22:00
 
-# ── Server ──────────────────────────────────────────────────────
 SERVER_HOST = os.getenv("SERVER_HOST", "0.0.0.0")
 SERVER_PORT = _int("SERVER_PORT", 3001)
+
+# ── Auth ────────────────────────────────────────────────────────
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "GANTI-INI-DENGAN-SECRET-YANG-AMAN")
