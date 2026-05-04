@@ -63,7 +63,7 @@ function generateMockData() {
  * @param {boolean} useMock — force mock data mode
  * @returns {{ displayData, isConnected, connectionStatus }}
  */
-export function useSocket(useMock = true) {
+export function useSocket(useMock = true, selectedDeviceId = "default_sensor") {
   const socketRef = useRef(null);
   const dataBuffer = useRef(null);
   const [displayData, setDisplayData] = useState(null);
@@ -119,7 +119,9 @@ export function useSocket(useMock = true) {
         });
 
         socket.on('sensor-data', (data) => {
-          dataBuffer.current = data;
+          if (!selectedDeviceId || data.device_id === selectedDeviceId) {
+            dataBuffer.current = data;
+          }
         });
       } catch {
         if (isMounted) setConnectionStatus('error');
@@ -132,7 +134,7 @@ export function useSocket(useMock = true) {
       isMounted = false;
       if (socketRef.current) socketRef.current.disconnect();
     };
-  }, [useMock]);
+  }, [useMock, selectedDeviceId]);
 
   // Sync buffer → state at controlled rate (5fps)
   useEffect(() => {

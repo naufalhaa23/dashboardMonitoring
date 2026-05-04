@@ -27,6 +27,9 @@ from database import db, init_db
 from auth import auth_bp, require_auth
 from routes.users import users_bp
 from routes.settings import settings_bp
+from routes.devices import devices_bp
+from routes.alerts import alerts_bp
+from routes.tariffs import tariffs_bp
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +51,9 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 app.register_blueprint(auth_bp)
 app.register_blueprint(users_bp)
 app.register_blueprint(settings_bp)
+app.register_blueprint(devices_bp)
+app.register_blueprint(alerts_bp)
+app.register_blueprint(tariffs_bp)
 
 # ── Socket.io ────────────────────────────────────────────────────────────────
 socketio = SocketIO(

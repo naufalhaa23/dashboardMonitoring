@@ -1,16 +1,19 @@
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Wifi, Database, Users,
-  LogOut, User as UserIcon
+  LogOut, User as UserIcon, Bell, Monitor, Banknote
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const NAV_ALL = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/alerts', label: 'Peringatan', icon: Bell },
 ];
 
 const NAV_ADMIN = [
+  { to: '/devices', label: 'Manajemen Alat', icon: Monitor },
   { to: '/users', label: 'User Management', icon: Users },
+  { to: '/settings/tariffs', label: 'Tarif Listrik', icon: Banknote },
   { to: '/settings/mqtt', label: 'MQTT Settings', icon: Wifi },
   { to: '/settings/influx', label: 'InfluxDB Settings', icon: Database },
 ];

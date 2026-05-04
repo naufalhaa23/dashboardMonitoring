@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Banknote, Zap, ZapOff } from 'lucide-react';
 import Header from '../components/Header';
 import GaugeCard from '../components/GaugeCard';
@@ -9,9 +10,22 @@ import Footer from '../components/Footer';
 import { useSocket, useTrendData } from '../hooks/useSocket';
 import { GAUGE_CONFIG } from '../utils/constants';
 import { formatRupiah, formatWatt } from '../utils/formatters';
+import { getDevices } from '../services/deviceService';
 
 export default function DashboardPage() {
-  const { displayData, isConnected, connectionStatus } = useSocket(false);
+  const [devices, setDevices] = useState([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState("default_sensor");
+
+  useEffect(() => {
+    getDevices().then(data => {
+      setDevices(data);
+      if (data.length > 0 && !data.some(d => d.device_id === selectedDeviceId)) {
+        setSelectedDeviceId(data[0].device_id);
+      }
+    }).catch(err => console.error("Gagal load devices", err));
+  }, []);
+
+  const { displayData, isConnected, connectionStatus } = useSocket(false, selectedDeviceId);
   const trendData = useTrendData(displayData, 5000, 300);
 
   return (
@@ -20,6 +34,21 @@ export default function DashboardPage() {
 
       {/* Gunakan gap-6 untuk jarak antar baris utama */}
       <div className="p-6 w-full max-w-[1600px] mx-auto flex-1 flex flex-col gap-6">
+
+        {/* ── Device Selector ─────────────────── */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '-10px' }}>
+          <span style={{ marginRight: '12px', fontWeight: '600', color: '#64748b', fontSize: '14px' }}>Pilih Alat:</span>
+          <select 
+            value={selectedDeviceId} 
+            onChange={e => setSelectedDeviceId(e.target.value)}
+            style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: 'white', fontWeight: 'bold', color: '#1e293b', outline: 'none', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', minWidth: '200px' }}
+          >
+            {devices.map(d => (
+              <option key={d.device_id} value={d.device_id}>{d.name} ({d.device_id})</option>
+            ))}
+            {devices.length === 0 && <option value="default_sensor">Default Sensor</option>}
+          </select>
+        </div>
 
         {/* ── Gauge Section ─────────────────── */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in-up" style={{ marginTop: '10px' }}>

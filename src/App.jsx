@@ -22,6 +22,9 @@ import DashboardPage       from './pages/DashboardPage';
 import MqttSettingsPage    from './pages/MqttSettingsPage';
 import InfluxSettingsPage  from './pages/InfluxSettingsPage';
 import UserManagementPage  from './pages/UserManagementPage';
+import AlertsPage          from './pages/AlertsPage';
+import DeviceManagementPage from './pages/DeviceManagementPage';
+import TariffSettingsPage  from './pages/TariffSettingsPage';
 
 export default function App() {
   return (
@@ -35,12 +38,15 @@ export default function App() {
 
           {/* Semua role */}
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/alerts"    element={<AlertsPage />} />
 
           {/* Admin only */}
           <Route element={<AdminRoute />}>
-            <Route path="/settings/mqtt"   element={<MqttSettingsPage />} />
-            <Route path="/settings/influx" element={<InfluxSettingsPage />} />
-            <Route path="/users"           element={<UserManagementPage />} />
+            <Route path="/devices"          element={<DeviceManagementPage />} />
+            <Route path="/settings/mqtt"    element={<MqttSettingsPage />} />
+            <Route path="/settings/influx"  element={<InfluxSettingsPage />} />
+            <Route path="/settings/tariffs" element={<TariffSettingsPage />} />
+            <Route path="/users"            element={<UserManagementPage />} />
           </Route>
 
         </Route>

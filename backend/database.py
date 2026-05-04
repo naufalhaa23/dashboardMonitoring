@@ -60,6 +60,63 @@ class Setting(db.Model):
     )
 
 
+class Device(db.Model):
+    __tablename__ = "devices"
+
+    id = db.Column(db.Integer, primary_key=True)
+    device_id = db.Column(db.String(100), unique=True, nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    location = db.Column(db.String(100), default="")
+    max_ampere = db.Column(db.Float, default=100.0) # Kapasitas maksimum trafo (Ampere)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "device_id": self.device_id,
+            "name": self.name,
+            "location": self.location,
+            "max_ampere": self.max_ampere,
+            "is_active": self.is_active
+        }
+
+class Alert(db.Model):
+    __tablename__ = "alerts"
+
+    id = db.Column(db.Integer, primary_key=True)
+    device_id = db.Column(db.Integer, db.ForeignKey('devices.id'), nullable=True)
+    alert_type = db.Column(db.String(50), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "device_id": self.device_id,
+            "alert_type": self.alert_type,
+            "message": self.message,
+            "is_read": self.is_read,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        }
+
+class Tariff(db.Model):
+    __tablename__ = "tariffs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False) # WBP atau LWBP
+    price_per_kwh = db.Column(db.Float, nullable=False)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "price_per_kwh": self.price_per_kwh
+        }
+
+
 # ── Helpers ─────────────────────────────────────────────────────────────────
 
 def get_setting(key: str, fallback: str = "") -> str:
@@ -115,3 +172,16 @@ def init_db(app):
                 db.session.add(Setting(key=key, value=value))
         db.session.commit()
         print("[DB] Settings default telah di-seed dari .env")
+
+        # ─ Seed default Tariffs ──────────────────────────────────────────
+        if not Tariff.query.filter_by(name="WBP").first():
+            db.session.add(Tariff(name="WBP", price_per_kwh=config.TARIFF_WBP))
+        if not Tariff.query.filter_by(name="LWBP").first():
+            db.session.add(Tariff(name="LWBP", price_per_kwh=config.TARIFF_LWBP))
+        db.session.commit()
+
+        # ─ Seed default Device ───────────────────────────────────────────
+        if not Device.query.first():
+            db.session.add(Device(device_id="default_sensor", name="Main Panel", location="Factory", max_ampere=100.0))
+            db.session.commit()
+        print("[DB] Init tables, tariffs, and devices finished.")

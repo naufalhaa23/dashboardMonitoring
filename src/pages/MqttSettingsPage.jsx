@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { Save, RefreshCw, CheckCircle, AlertCircle, Eye, EyeOff, Info } from 'lucide-react';
 import api from '../services/api';
+import { useSocket } from '../hooks/useSocket';
 import Header from '../components/Header';
 
 const inputStyle = {
@@ -54,6 +55,7 @@ function FieldLabel({ children, htmlFor, required }) {
 }
 
 export default function MqttSettingsPage() {
+  const { connectionStatus } = useSocket(false);
   const [form, setForm] = useState({
     mqtt_broker: '', mqtt_port: '1883', mqtt_topic: '',
     mqtt_username: '', mqtt_password: ''
@@ -111,7 +113,7 @@ export default function MqttSettingsPage() {
   if (loading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: '#f8fafc' }}>
-        <Header title="MQTT Settings" connectionStatus="mock" />
+        <Header title="MQTT Settings" connectionStatus={connectionStatus} />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ width: '32px', height: '32px', border: '3px solid #e0e7ff', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
         </div>
@@ -121,7 +123,7 @@ export default function MqttSettingsPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: '#f8fafc' }}>
-      <Header title="MQTT Settings" connectionStatus="mock" />
+      <Header title="MQTT Settings" connectionStatus={connectionStatus} />
 
       <div style={{ padding: '32px', width: '100%', maxWidth: '860px', margin: '0 auto', flex: 1, boxSizing: 'border-box' }}>
 

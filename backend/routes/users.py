@@ -111,3 +111,27 @@ def update_role(user_id: int):
     logger.info("Role user %s diubah ke %s oleh %s",
                 user.username, new_role, request.current_user["username"])
     return jsonify(user.to_dict())
+
+@users_bp.route("/api/users/<int:user_id>/password", methods=["PUT"])
+@require_admin
+def update_password(user_id: int):
+    """
+    PUT /api/users/<id>/password
+    Body: { "password": "..." }
+    """
+    data = request.get_json(silent=True) or {}
+    new_password = data.get("password", "")
+    
+    if not new_password or len(new_password) < 6:
+        return jsonify({"error": "Password minimal 6 karakter."}), 400
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User tidak ditemukan."}), 404
+
+    user.set_password(new_password)
+    db.session.commit()
+
+    logger.info("Password user %s diubah oleh %s",
+                user.username, request.current_user["username"])
+    return jsonify({"message": f"Password untuk '{user.username}' berhasil diubah."})

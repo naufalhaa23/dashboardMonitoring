@@ -87,7 +87,6 @@ export default function LoginPage() {
                 autoFocus
                 value={form.username}
                 onChange={handleChange}
-                placeholder="Masukkan username Anda"
                 className="login-input" /* Class CSS kita */
               />
             </div>
@@ -105,7 +104,6 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   value={form.password}
                   onChange={handleChange}
-                  placeholder="Masukkan password Anda"
                   className="login-input pr-12" /* Class CSS kita + padding kanan agar tidak nabrak icon */
                 />
                 <button
@@ -134,7 +132,6 @@ export default function LoginPage() {
             <button
               id="btn-login-submit"
               type="submit"
-              disabled={loading}
               className="login-btn mt-2 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {loading ? (

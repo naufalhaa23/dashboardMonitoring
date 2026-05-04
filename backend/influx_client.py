@@ -107,7 +107,8 @@ class InfluxWriter:
     def get_latest_today_state(self) -> dict:
         """
         Mengambil nilai kwh_wbp_today dan kwh_lwbp_today terakhir
-        pada hari ini untuk auto-resume saat server menyala kembali.
+        pada hari ini untuk auto-resume saat server menyala kembali, dikelompokkan per device_id.
+        Return: { "device_id": {"wbp": 0.0, "lwbp": 0.0, "last_plc_kwh": None}, ... }
         """
         from datetime import datetime
         try:
@@ -121,22 +122,26 @@ class InfluxWriter:
             '''
             result = self._query_api.query(query=flux, org=config.INFLUX_ORG)
             
-            state = {"wbp": 0.0, "lwbp": 0.0, "last_plc_kwh": None}
+            states = {}
             for table in result:
                 for record in table.records:
+                    device_id = record.values.get("device_id", "default_sensor")
+                    if device_id not in states:
+                        states[device_id] = {"wbp": 0.0, "lwbp": 0.0, "last_plc_kwh": None}
+                    
                     field = record.get_field()
                     val = record.get_value()
                     if field == "kwh_wbp_today":
-                        state["wbp"] = float(val) if val is not None else 0.0
+                        states[device_id]["wbp"] = float(val) if val is not None else 0.0
                     elif field == "kwh_lwbp_today":
-                        state["lwbp"] = float(val) if val is not None else 0.0
+                        states[device_id]["lwbp"] = float(val) if val is not None else 0.0
                     elif field == "plc_absolute_kwh":
-                        state["last_plc_kwh"] = float(val) if val is not None else None
+                        states[device_id]["last_plc_kwh"] = float(val) if val is not None else None
             
-            return state
+            return states
         except Exception as e:
             logger.error("Gagal mengambil state hari ini: %s", e)
-            return {"wbp": 0.0, "lwbp": 0.0, "last_plc_kwh": None}
+            return {}
 
     def query_daily_history(self, from_date: str, to_date: str) -> list[dict]:
         """

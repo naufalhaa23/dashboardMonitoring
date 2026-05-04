@@ -4,9 +4,10 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, MoreVertical, AlertCircle, X, CheckCircle, Users } from 'lucide-react';
+import { Plus, AlertCircle, X, CheckCircle, Users, Trash2, Shield, Key } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import { useSocket } from '../hooks/useSocket';
 import Header from '../components/Header';
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
@@ -151,14 +152,118 @@ function AddUserModal({ onClose, onSuccess }) {
   );
 }
 
+// ── Change Password Modal ──────────────────────────────────────────────────────
+
+function ChangePasswordModal({ user, onClose, onSuccess }) {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!password || password.length < 6) {
+      setError('Password minimal 6 karakter.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await api.put(`/api/users/${user.id}/password`, { password });
+      onSuccess(user.username);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Gagal mengubah password.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const inputStyle = {
+    width: '100%', boxSizing: 'border-box', padding: '10px 16px', borderRadius: '8px',
+    border: '1px solid #cbd5e1', backgroundColor: '#fff', fontSize: '14px', color: '#1e293b', outline: 'none'
+  };
+
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center',
+        justifyContent: 'center', padding: '16px', backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)'
+      }}
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <div style={{ backgroundColor: '#fff', borderRadius: '16px', width: '100%', maxWidth: '448px', padding: '24px', boxShadow: '0 20px 48px rgba(0,0,0,0.15)', border: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: '#fef9c3', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Key style={{ width: '20px', height: '20px', color: '#ca8a04' }} />
+            </div>
+            <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1e293b', margin: 0 }}>Ubah Password</h2>
+          </div>
+          <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+            <X style={{ width: '20px', height: '20px' }} />
+          </button>
+        </div>
+
+        {error && (
+          <div style={{ color: '#b91c1c', fontSize: '14px', marginBottom: '20px', backgroundColor: '#fef2f2', padding: '12px', borderRadius: '8px', border: '1px solid #fecaca', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <AlertCircle style={{ width: '16px', height: '16px' }} />
+            {error}
+          </div>
+        )}
+
+        <p style={{ fontSize: '14px', color: '#475569', marginBottom: '16px' }}>
+          Masukkan password baru untuk user <strong>{user.username}</strong>.
+        </p>
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <div>
+            <label style={{ fontSize: '13px', fontWeight: '600', color: '#475569', marginBottom: '6px', display: 'block' }}>Password Baru</label>
+            <input type="password" style={inputStyle} value={password} onChange={e => { setPassword(e.target.value); setError(''); }} placeholder="Minimal 6 karakter" required />
+          </div>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '8px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
+            <button type="button" onClick={onClose} style={{ flex: 1, padding: '10px 0', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: '600', color: '#475569', backgroundColor: '#fff', cursor: 'pointer' }}>
+              Batal
+            </button>
+            <button type="submit" disabled={loading} style={{ flex: 1, padding: '10px 0', borderRadius: '8px', border: 'none', fontSize: '14px', fontWeight: '700', color: '#fff', backgroundColor: '#ca8a04', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}>
+              {loading ? 'Menyimpan...' : 'Simpan'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Page ──────────────────────────────────────────────────────────────────
 
 export default function UserManagementPage() {
   const { user: currentUser } = useAuth();
+  const { connectionStatus } = useSocket(false);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [alert, setAlert] = useState({ type: '', message: '' });
+  const [changePasswordUser, setChangePasswordUser] = useState(null);
+
+  const handleDelete = async (id, username) => {
+    if (!window.confirm(`Yakin ingin menghapus user ${username}?`)) return;
+    try {
+      await api.delete(`/api/users/${id}`);
+      setUsers(users.map(u => u.id === id ? { ...u, is_active: false } : u));
+      setAlert({ type: 'success', message: `User ${username} berhasil dihapus.` });
+    } catch (err) {
+      setAlert({ type: 'error', message: err.response?.data?.error || 'Gagal menghapus user.' });
+    }
+  };
+
+  const handleToggleRole = async (id, currentRole) => {
+    const newRole = currentRole === 'admin' ? 'viewer' : 'admin';
+    try {
+      await api.put(`/api/users/${id}/role`, { role: newRole });
+      setUsers(users.map(u => u.id === id ? { ...u, role: newRole } : u));
+      setAlert({ type: 'success', message: `Role berhasil diubah menjadi ${newRole}.` });
+    } catch (err) {
+      setAlert({ type: 'error', message: err.response?.data?.error || 'Gagal mengubah role.' });
+    }
+  };
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
@@ -189,7 +294,7 @@ export default function UserManagementPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: '#f8fafc' }}>
-      <Header connectionStatus="mock" />
+      <Header connectionStatus={connectionStatus} />
 
       <div style={{ padding: '32px', width: '100%', maxWidth: '1200px', margin: '0 auto', flex: 1, boxSizing: 'border-box' }}>
 
@@ -224,7 +329,7 @@ export default function UserManagementPage() {
                   <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', width: '18%' }}>Role</th>
                   <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', width: '22%' }}>Dibuat</th>
                   <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', width: '18%' }}>Status</th>
-                  <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', width: '7%', textAlign: 'right' }}>Aksi</th>
+                  <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', width: '12%', textAlign: 'center' }}>Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -258,10 +363,36 @@ export default function UserManagementPage() {
                       <td style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9' }}>
                         <StatusBadge isActive={u.is_active} />
                       </td>
-                      <td style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9', textAlign: 'right' }}>
-                        <button style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '8px', color: '#94a3b8' }}>
-                          <MoreVertical style={{ width: '20px', height: '20px' }} />
-                        </button>
+                      <td style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                          <button
+                            title="Ubah Password"
+                            onClick={() => setChangePasswordUser(u)}
+                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '6px', color: '#64748b', borderRadius: '6px', display: 'flex', alignItems: 'center', transition: 'all 0.15s ease' }}
+                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#fef9c3'; e.currentTarget.style.color = '#ca8a04'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#64748b'; }}
+                          >
+                            <Key style={{ width: '18px', height: '18px' }} />
+                          </button>
+                          <button
+                            title={`Ubah jadi ${u.role === 'admin' ? 'Viewer' : 'Admin'}`}
+                            onClick={() => handleToggleRole(u.id, u.role)}
+                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '6px', color: '#64748b', borderRadius: '6px', display: 'flex', alignItems: 'center', transition: 'all 0.15s ease' }}
+                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f1f5f9'; e.currentTarget.style.color = '#4f46e5'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#64748b'; }}
+                          >
+                            <Shield style={{ width: '18px', height: '18px' }} />
+                          </button>
+                          <button
+                            title="Hapus User"
+                            onClick={() => handleDelete(u.id, u.username)}
+                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '6px', color: '#64748b', borderRadius: '6px', display: 'flex', alignItems: 'center', transition: 'all 0.15s ease' }}
+                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#fef2f2'; e.currentTarget.style.color = '#ef4444'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#64748b'; }}
+                          >
+                            <Trash2 style={{ width: '18px', height: '18px' }} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -294,6 +425,16 @@ export default function UserManagementPage() {
 
       {showAdd && (
         <AddUserModal onClose={() => setShowAdd(false)} onSuccess={handleAddSuccess} />
+      )}
+      {changePasswordUser && (
+        <ChangePasswordModal
+          user={changePasswordUser}
+          onClose={() => setChangePasswordUser(null)}
+          onSuccess={(username) => {
+            setChangePasswordUser(null);
+            setAlert({ type: 'success', message: `Password untuk user "${username}" berhasil diubah.` });
+          }}
+        />
       )}
     </div>
   );
